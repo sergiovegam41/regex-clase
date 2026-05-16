@@ -1,6 +1,8 @@
 # Clase de Expresiones Regulares — Paso a Paso
 
-Una página local (estilo presentación / stepper) construida con **HTML, CSS y JavaScript puros**, sin frameworks ni dependencias.
+Una página (estilo presentación / stepper) construida con **HTML, CSS y JavaScript puros**, sin frameworks ni dependencias.
+
+**🌐 En vivo:** https://sergiovegam41.github.io/regex-clase/
 
 ## Objetivo
 
@@ -21,16 +23,20 @@ Exponer y enseñar expresiones regulares en 6 pasos, repartidos entre 2 exposito
 
 Cada expositor tiene 1 tema fácil, 1 medio y 1 difícil.
 
-## Cómo correrlo (Termux)
+## Cómo verlo
 
-No necesita servidor: abre el archivo directamente.
+### Opción 1 — En línea
+Abre https://sergiovegam41.github.io/regex-clase/ desde cualquier navegador.
+
+### Opción 2 — Local (Termux)
+No necesita servidor (es 100% estático):
 
 ```bash
-cd regex-clase
+cd ~/downloads/regex-clase
 termux-open index.html
 ```
 
-O simplemente abrirlo desde el explorador de archivos del teléfono haciendo doble tap en `index.html`.
+O abre el archivo desde el explorador de archivos del teléfono haciendo tap en `index.html`.
 
 ## Atajos de teclado
 
