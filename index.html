@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Clase de Expresiones Regulares — Paso a Paso</title>
+<style>
+  :root {
+    --bg: #0f1226;
+    --panel: #181c3a;
+    --panel-2: #20254a;
+    --accent: #7c5cff;
+    --accent-2: #19c2ff;
+    --ok: #2ecc71;
+    --err: #ff5577;
+    --text: #e8eaf6;
+    --muted: #9aa0c3;
+    --code-bg: #0b0e22;
+    --border: #2a2f5a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: linear-gradient(135deg, #0a0d20 0%, #131736 60%, #0e1130 100%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+  }
+  header {
+    padding: 22px 28px 8px;
+    text-align: center;
+  }
+  header h1 {
+    margin: 0;
+    font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 0.5px;
+  }
+  header p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  /* Stepper */
+  .stepper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 18px 16px;
+  }
+  .step-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    transition: all .25s ease;
+    font-size: 0.85rem;
+  }
+  .step-pill .num {
+    width: 24px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: var(--panel-2);
+    font-weight: 700;
+    font-size: 0.8rem;
+  }
+  .step-pill.active {
+    background: linear-gradient(90deg, rgba(124,92,255,.25), rgba(25,194,255,.18));
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(124,92,255,.4), 0 6px 20px -8px rgba(124,92,255,.6);
+  }
+  .step-pill.active .num {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+  }
+  .step-pill .who {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+    color: var(--muted);
+    background: rgba(255,255,255,0.05);
+  }
+  .step-pill.who-a .who { color: #ffd166; background: rgba(255,209,102,0.1); }
+  .step-pill.who-b .who { color: #19c2ff; background: rgba(25,194,255,0.1); }
+
+  /* Main slide */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 12px 22px 110px;
+  }
+  .slide {
+    display: none;
+    animation: fade .35s ease;
+  }
+  .slide.active { display: block; }
+  @keyframes fade {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .slide-head {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .slide-head h2 {
+    margin: 0; font-size: 1.4rem;
+    color: #fff;
+  }
+  .badge-expo {
+    font-size: 0.78rem;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+  }
+  .badge-expo.a { color: #ffd166; border-color: rgba(255,209,102,.4); }
+  .badge-expo.b { color: #19c2ff; border-color: rgba(25,194,255,.4); }
+  .difficulty {
+    font-size: 0.7rem; color: var(--muted);
+    margin-left: 8px;
+  }
+  .dots { letter-spacing: 2px; }
+
+  /* Columns */
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 860px) {
+    .cols { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 18px 20px;
+    box-shadow: 0 10px 30px -18px rgba(0,0,0,0.5);
+  }
+  .card h3 {
+    margin: 0 0 12px;
+    font-size: 1.0rem;
+    color: var(--accent-2);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+
+  /* Form */
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  input[type="text"], textarea {
+    width: 100%;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 11px 12px;
+    font-size: 0.95rem;
+    font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  textarea { min-height: 130px; resize: vertical; }
+  input[type="text"]:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,92,255,.25);
+  }
+  input.ok, textarea.ok { border-color: var(--ok); box-shadow: 0 0 0 3px rgba(46,204,113,.18); }
+  input.err, textarea.err { border-color: var(--err); box-shadow: 0 0 0 3px rgba(255,85,119,.18); }
+
+  .feedback {
+    margin-top: 10px;
+    font-size: 0.88rem;
+    min-height: 22px;
+  }
+  .feedback.ok  { color: var(--ok); }
+  .feedback.err { color: var(--err); }
+  .hint {
+    margin-top: 8px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .examples {
+    margin-top: 12px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .examples button {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 9px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background .2s;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .examples button:hover { background: var(--accent); border-color: var(--accent); }
+
+  /* Regex card */
+  .regex-box {
+    background: var(--code-bg);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.95rem;
+    color: #ffe066;
+    overflow-x: auto;
+    margin-bottom: 12px;
+  }
+  .desc { color: var(--text); font-size: 0.92rem; line-height: 1.55; }
+  .desc p { margin: 0 0 10px; }
+  .desc code {
+    background: var(--code-bg);
+    color: #ffe066;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.86em;
+  }
+  .desc ul { margin: 6px 0 10px 18px; padding: 0; }
+  .desc li { margin: 4px 0; }
+  .op-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+    font-size: 0.84rem;
+  }
+  .op-table th, .op-table td {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .op-table th { color: var(--accent-2); }
+  .op-table code { background: var(--code-bg); color: #ffe066; padding: 1px 5px; border-radius: 4px; }
+
+  /* Highlight matches in textarea preview */
+  .highlight-preview {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 12px;
+    min-height: 60px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-top: 12px;
+    color: var(--text);
+  }
+  .highlight-preview mark {
+    background: rgba(46,204,113,.25);
+    color: #b6ffd9;
+    border-radius: 4px;
+    padding: 1px 2px;
+    border: 1px solid rgba(46,204,113,.45);
+  }
+  .matches-count {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* Bottom controls */
+  .controls {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 14px 20px;
+    display: flex; justify-content: center; align-items: center; gap: 12px;
+    background: linear-gradient(0deg, rgba(10,13,32,.95), rgba(10,13,32,.6) 70%, rgba(10,13,32,0));
+    backdrop-filter: blur(6px);
+    z-index: 50;
+  }
+  .controls button {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .controls button:hover:not(:disabled) {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .controls button:disabled {
+    opacity: .4; cursor: not-allowed;
+  }
+  .progress {
+    font-size: 0.88rem;
+    color: var(--muted);
+    min-width: 80px;
+    text-align: center;
+  }
+  .progress strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.78rem;
+    padding: 0 12px 90px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Expresiones Regulares · Clase Paso a Paso</h1>
+  <p>6 pasos · 2 expositores · ejemplo en vivo + explicación</p>
+</header>
+
+<nav class="stepper" id="stepper"></nav>
+
+<main id="slides">
+
+  <!-- ============================ PASO 1 ============================ -->
+  <section class="slide" data-step="1" data-expo="A">
+    <div class="slide-head">
+      <h2>1. ¿Qué es una expresión regular? + Operadores básicos</h2>
+      <div>
+        <span class="badge-expo a">Expositor 1</span>
+        <span class="difficulty">Dificultad <span class="dots">●○○</span></span>
+      </div>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <h3>Formulario de ejemplo</h3>
+        <label for="in-1">Escribe algo que empiece con "Hola" y termine con un número:</label>
+        <input type="text" id="in-1" placeholder="ej: Hola 42" />
+        <div class="feedback" id="fb-1"></div>
+        <div class="hint">Patrón: empieza con "Hola", espacio y termina con uno o más dígitos.</div>
+        <div class="examples">
+          <button data-fill="1" data-val="Hola 7">Hola 7</button>
+          <button data-fill="1" data-val="Hola 2026">Hola 2026</button>
+          <button data-fill="1" data-val="hola mundo">hola mundo</button>
+          <button data-fill="1" data-val="Hola">Hola</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Expresión regular y explicación</h3>
+        <div class="regex-box">/^Hola \d+$/</div>
+        <div class="desc">
+          <p>Una <b>expresión regular</b> (RegEx) es una secuencia de caracteres que define un patrón de búsqueda dentro de una cadena de texto. Sirve para <b>buscar, validar o extraer</b> información.</p>
+          <p>En el patrón <code>^Hola \d+$</code>:</p>
+          <table class="op-table">
+            <tr><th>Operador</th><th>Significado</th></tr>
+            <tr><td><code>^</code></td><td>Inicio de la cadena</td></tr>
+            <tr><td><code>$</code></td><td>Fin de la cadena</td></tr>
+            <tr><td><code>.</code></td><td>Cualquier carácter (uno)</td></tr>
+            <tr><td><code>*</code></td><td>0 o más repeticiones</td></tr>
+            <tr><td><code>+</code></td><td>1 o más repeticiones</td></tr>
+            <tr><td><code>?</code></td><td>0 o 1 (opcional)</td></tr>
+            <tr><td><code>\d</code></td><td>Un dígito (0-9)</td></tr>
+            <tr><td><code>\w</code></td><td>Letra, dígito o _</td></tr>
+            <tr><td><code>[abc]</code></td><td>Conjunto: a, b o c</td></tr>
+            <tr><td><code>(a|b)</code></td><td>Alternativa: a o b</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ PASO 2 ============================ -->
+  <section class="slide" data-step="2" data-expo="B">
+    <div class="slide-head">
+      <h2>2. Validación de letras (nombres)</h2>
+      <div>
+        <span class="badge-expo b">Expositor 2</span>
+        <span class="difficulty">Dificultad <span class="dots">●○○</span></span>
+      </div>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <h3>Formulario de ejemplo</h3>
+        <label for="in-2">Nombre completo (solo letras y espacios):</label>
+        <input type="text" id="in-2" placeholder="ej: Ana María Pérez" />
+        <div class="feedback" id="fb-2"></div>
+        <div class="hint">Acepta tildes y la "ñ". No permite números ni símbolos.</div>
+        <div class="examples">
+          <button data-fill="2" data-val="Juan Pérez">Juan Pérez</button>
+          <button data-fill="2" data-val="María Ñañez">María Ñañez</button>
+          <button data-fill="2" data-val="Pedro123">Pedro123</button>
+          <button data-fill="2" data-val="Ana@gmail">Ana@gmail</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Expresión regular y explicación</h3>
+        <div class="regex-box">/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/</div>
+        <div class="desc">
+          <p>Esta RegEx valida que el texto contenga <b>únicamente letras y espacios</b>, incluyendo vocales acentuadas y la letra ñ.</p>
+          <ul>
+            <li><code>^</code> y <code>$</code> aseguran que <b>toda la cadena</b> cumpla el patrón.</li>
+            <li><code>[ ... ]</code> es un <b>conjunto de caracteres</b>: cualquiera dentro de los corchetes es válido.</li>
+            <li><code>A-Z</code> y <code>a-z</code> son <b>rangos</b> alfabéticos.</li>
+            <li><code>ÁÉÍÓÚáéíóúÑñ</code> agregan letras propias del español.</li>
+            <li>El espacio <code>" "</code> dentro de los corchetes permite nombres compuestos.</li>
+            <li><code>+</code> exige <b>uno o más</b> caracteres (no permite vacío).</li>
+          </ul>
+          <p>Si se quisiera un mínimo o máximo de caracteres, se puede reemplazar el <code>+</code> por <code>{2,40}</code>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ PASO 3 ============================ -->
+  <section class="slide" data-step="3" data-expo="A">
+    <div class="slide-head">
+      <h2>3. Validación de números (teléfono colombiano)</h2>
+      <div>
+        <span class="badge-expo a">Expositor 1</span>
+        <span class="difficulty">Dificultad <span class="dots">●●○</span></span>
+      </div>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <h3>Formulario de ejemplo</h3>
+        <label for="in-3">Teléfono celular (10 dígitos, empieza por 3):</label>
+        <input type="text" id="in-3" placeholder="ej: 3001234567" />
+        <div class="feedback" id="fb-3"></div>
+        <div class="hint">Debe iniciar con 3 y tener exactamente 10 dígitos.</div>
+        <div class="examples">
+          <button data-fill="3" data-val="3001234567">3001234567</button>
+          <button data-fill="3" data-val="3219876543">3219876543</button>
+          <button data-fill="3" data-val="123456">123456</button>
+          <button data-fill="3" data-val="3001a23456">3001a23456</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Expresión regular y explicación</h3>
+        <div class="regex-box">/^3\d{9}$/</div>
+        <div class="desc">
+          <p>En Colombia los celulares tienen <b>10 dígitos</b> e inician con <b>3</b>. Esta RegEx lo valida estrictamente.</p>
+          <ul>
+            <li><code>^3</code>: la cadena <b>debe empezar con el dígito 3</b>.</li>
+            <li><code>\d</code>: cualquier dígito (0-9). Equivale a <code>[0-9]</code>.</li>
+            <li><code>{9}</code>: exactamente <b>9 repeticiones</b> del elemento anterior (\d).</li>
+            <li><code>$</code>: fin de la cadena — no se permiten más caracteres.</li>
+          </ul>
+          <p>Otras variantes útiles:</p>
+          <table class="op-table">
+            <tr><th>Patrón</th><th>Valida</th></tr>
+            <tr><td><code>^\d+$</code></td><td>Solo dígitos, sin tamaño fijo</td></tr>
+            <tr><td><code>^\d{1,3}$</code></td><td>Entre 1 y 3 dígitos (edad)</td></tr>
+            <tr><td><code>^-?\d+(\.\d+)?$</code></td><td>Número decimal con signo</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ PASO 4 ============================ -->
+  <section class="slide" data-step="4" data-expo="B">
+    <div class="slide-head">
+      <h2>4. Validación de correos electrónicos</h2>
+      <div>
+        <span class="badge-expo b">Expositor 2</span>
+        <span class="difficulty">Dificultad <span class="dots">●●○</span></span>
+      </div>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <h3>Formulario de ejemplo</h3>
+        <label for="in-4">Correo electrónico:</label>
+        <input type="text" id="in-4" placeholder="ej: usuario@dominio.com" />
+        <div class="feedback" id="fb-4"></div>
+        <div class="hint">Estructura: <code>usuario@dominio.tld</code></div>
+        <div class="examples">
+          <button data-fill="4" data-val="ana.perez@gmail.com">ana.perez@gmail.com</button>
+          <button data-fill="4" data-val="juan+test@empresa.co">juan+test@empresa.co</button>
+          <button data-fill="4" data-val="sin-arroba.com">sin-arroba.com</button>
+          <button data-fill="4" data-val="hola@dominio">hola@dominio</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Expresión regular y explicación</h3>
+        <div class="regex-box">/^[\w.+-]+@[A-Za-z0-9-]+\.[A-Za-z.]{2,}$/</div>
+        <div class="desc">
+          <p>Un correo tiene tres bloques: <b>parte local</b> · <code>@</code> · <b>dominio</b> · <code>.</code> · <b>TLD</b>.</p>
+          <ul>
+            <li><code>[\w.+-]+</code>: parte local — letras, dígitos, "_", ".", "+" o "-".</li>
+            <li><code>@</code>: el signo arroba, obligatorio.</li>
+            <li><code>[A-Za-z0-9-]+</code>: dominio — letras, dígitos y guiones.</li>
+            <li><code>\.</code>: un punto literal (con <code>\</code> escapamos el operador).</li>
+            <li><code>[A-Za-z.]{2,}</code>: TLD de 2 o más caracteres (soporta <code>com</code>, <code>co</code>, <code>com.co</code>).</li>
+          </ul>
+          <p><b>Importante:</b> No existe una RegEx "perfecta" para validar correos según el RFC 5322, pero esta cubre el 99% de casos reales.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ PASO 5 ============================ -->
+  <section class="slide" data-step="5" data-expo="A">
+    <div class="slide-head">
+      <h2>5. Secuencias binarias sin "11" consecutivos</h2>
+      <div>
+        <span class="badge-expo a">Expositor 1</span>
+        <span class="difficulty">Dificultad <span class="dots">●●●</span></span>
+      </div>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <h3>Formulario de ejemplo</h3>
+        <label for="in-5">Cadena binaria (solo 0 y 1, sin dos "1" seguidos):</label>
+        <input type="text" id="in-5" placeholder="ej: 1010010" />
+        <div class="feedback" id="fb-5"></div>
+        <div class="hint">Acepta cadenas como <code>0</code>, <code>10</code>, <code>0101001</code>. Rechaza si aparece <code>11</code>.</div>
+        <div class="examples">
+          <button data-fill="5" data-val="10101010">10101010</button>
+          <button data-fill="5" data-val="0010010">0010010</button>
+          <button data-fill="5" data-val="10110">10110</button>
+          <button data-fill="5" data-val="111">111</button>
+          <button data-fill="5" data-val="1201">1201</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Expresión regular y explicación</h3>
+        <div class="regex-box">/^(?!.*11)[01]+$/</div>
+        <div class="desc">
+          <p>Queremos cadenas que solo tengan <b>0</b> y <b>1</b>, pero que <b>nunca</b> contengan la subcadena <code>11</code>.</p>
+          <ul>
+            <li><code>^</code>: inicio de la cadena.</li>
+            <li><code>(?!.*11)</code>: <b>lookahead negativo</b>. Antes de seguir, "mira hacia adelante" y asegura que <b>no</b> exista ningún <code>11</code> en toda la cadena. Si lo encuentra, falla.</li>
+            <li><code>[01]+</code>: una o más apariciones de <code>0</code> o <code>1</code>.</li>
+            <li><code>$</code>: fin de la cadena.</li>
+          </ul>
+          <p><b>Alternativa equivalente</b> (sin lookahead, usando teoría de autómatas):</p>
+          <div class="regex-box">/^0*(10+)*1?$/</div>
+          <p>Esto describe el lenguaje: "cualquier cantidad de 0s, seguidos de bloques de un 1 + uno o más 0s, y opcionalmente un 1 al final" — es imposible producir <code>11</code> con ese patrón.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ PASO 6 ============================ -->
+  <section class="slide" data-step="6" data-expo="B">
+    <div class="slide-head">
+      <h2>6. Detectar y extraer correos dentro de un texto</h2>
+      <div>
+        <span class="badge-expo b">Expositor 2</span>
+        <span class="difficulty">Dificultad <span class="dots">●●●</span></span>
+      </div>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <h3>Formulario de ejemplo</h3>
+        <label for="in-6">Pega un texto y extraeremos todos los correos:</label>
+        <textarea id="in-6" placeholder="Pega aquí un texto con correos...">Hola, contáctanos en soporte@empresa.com o ventas+co@empresa.com.co. También en admin_2026@uni.edu, no escribas a "noemail" ni a foo@bar (sin tld).</textarea>
+        <div class="feedback" id="fb-6"></div>
+        <div class="highlight-preview" id="prev-6"></div>
+        <div class="matches-count" id="cnt-6"></div>
+      </div>
+      <div class="card">
+        <h3>Expresión regular y explicación</h3>
+        <div class="regex-box">/[\w.+-]+@[A-Za-z0-9-]+\.[A-Za-z.]{2,}/g</div>
+        <div class="desc">
+          <p>A diferencia del paso 4, ahora <b>no usamos</b> <code>^</code> ni <code>$</code> porque <b>no validamos</b> toda la cadena: queremos <b>extraer</b> correos en cualquier posición del texto.</p>
+          <ul>
+            <li>La <b>bandera global</b> <code>g</code> hace que la búsqueda continúe después de cada coincidencia y devuelva todas.</li>
+            <li>El patrón es el mismo del paso 4 pero <b>sin anclas</b>, así puede encajar dentro de un texto más largo.</li>
+            <li>En JavaScript usamos <code>String.matchAll(regex)</code> o <code>String.match(regex)</code> con la bandera <code>g</code> para obtener el arreglo de resultados.</li>
+          </ul>
+          <p><b>Ejemplo en código:</b></p>
+          <div class="regex-box">const correos = texto.match(/[\w.+-]+@[A-Za-z0-9-]+\.[A-Za-z.]{2,}/g);</div>
+          <p>Las coincidencias se resaltan en <span style="background: rgba(46,204,113,.25); color: #b6ffd9; padding: 1px 6px; border-radius: 4px;">verde</span> en el panel izquierdo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="controls">
+  <button id="btn-prev">← Anterior</button>
+  <div class="progress">Paso <strong id="current">1</strong> / <strong>6</strong></div>
+  <button id="btn-next">Siguiente →</button>
+</div>
+
+<footer>
+  Hecho para clase · Expositor 1 (pasos 1, 3, 5) · Expositor 2 (pasos 2, 4, 6)
+</footer>
+
+<script>
+  // -------------------- Stepper navigation --------------------
+  const TOTAL_STEPS = 6;
+  let current = 1;
+
+  const slidesEls = document.querySelectorAll('.slide');
+  const stepperEl = document.getElementById('stepper');
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+  const curEl = document.getElementById('current');
+
+  const STEP_META = [
+    { n: 1, t: 'Definición', expo: 'A' },
+    { n: 2, t: 'Letras',     expo: 'B' },
+    { n: 3, t: 'Números',    expo: 'A' },
+    { n: 4, t: 'Correos',    expo: 'B' },
+    { n: 5, t: 'Binario',    expo: 'A' },
+    { n: 6, t: 'Extraer',    expo: 'B' },
+  ];
+
+  // Build stepper pills
+  STEP_META.forEach(s => {
+    const pill = document.createElement('div');
+    pill.className = 'step-pill ' + (s.expo === 'A' ? 'who-a' : 'who-b');
+    pill.dataset.go = s.n;
+    pill.innerHTML = `<span class="num">${s.n}</span> ${s.t} <span class="who">Exp ${s.expo === 'A' ? '1' : '2'}</span>`;
+    pill.addEventListener('click', () => goTo(s.n));
+    stepperEl.appendChild(pill);
+  });
+
+  function goTo(n) {
+    if (n < 1 || n > TOTAL_STEPS) return;
+    current = n;
+    slidesEls.forEach(s => s.classList.toggle('active', +s.dataset.step === n));
+    document.querySelectorAll('.step-pill').forEach(p => p.classList.toggle('active', +p.dataset.go === n));
+    curEl.textContent = n;
+    btnPrev.disabled = (n === 1);
+    btnNext.disabled = (n === TOTAL_STEPS);
+    // Re-run current step validation
+    runValidation(n);
+  }
+  btnPrev.addEventListener('click', () => goTo(current - 1));
+  btnNext.addEventListener('click', () => goTo(current + 1));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') goTo(current + 1);
+    if (e.key === 'ArrowLeft')  goTo(current - 1);
+  });
+
+  // -------------------- Example buttons --------------------
+  document.querySelectorAll('button[data-fill]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const step = btn.dataset.fill;
+      const val = btn.dataset.val;
+      const el = document.getElementById('in-' + step);
+      el.value = val;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.focus();
+    });
+  });
+
+  // -------------------- Per-step validation --------------------
+  const REGEX = {
+    1: /^Hola \d+$/,
+    2: /^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/,
+    3: /^3\d{9}$/,
+    4: /^[\w.+-]+@[A-Za-z0-9-]+\.[A-Za-z.]{2,}$/,
+    5: /^(?!.*11)[01]+$/,
+    6: /[\w.+-]+@[A-Za-z0-9-]+\.[A-Za-z.]{2,}/g,
+  };
+
+  function applyState(el, fb, ok, msgOk, msgErr, empty) {
+    el.classList.remove('ok', 'err');
+    fb.classList.remove('ok', 'err');
+    if (empty) {
+      fb.textContent = '';
+      return;
+    }
+    if (ok) {
+      el.classList.add('ok'); fb.classList.add('ok');
+      fb.textContent = '✓ ' + msgOk;
+    } else {
+      el.classList.add('err'); fb.classList.add('err');
+      fb.textContent = '✗ ' + msgErr;
+    }
+  }
+
+  function validate(step) {
+    const el = document.getElementById('in-' + step);
+    const fb = document.getElementById('fb-' + step);
+    if (!el || !fb) return;
+    const v = el.value;
+    if (step === 6) {
+      const rx = new RegExp(REGEX[6].source, 'g');
+      const matches = v.match(rx) || [];
+      const prev = document.getElementById('prev-6');
+      const cnt  = document.getElementById('cnt-6');
+      // Build highlighted HTML
+      const escapeHtml = (s) => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      const highlighted = escapeHtml(v).replace(
+        new RegExp(REGEX[6].source, 'g'),
+        m => `<mark>${m}</mark>`
+      );
+      prev.innerHTML = highlighted || '<span style="color:#9aa0c3">(escribe o pega un texto…)</span>';
+      cnt.textContent = matches.length
+        ? `Se encontraron ${matches.length} correo${matches.length === 1 ? '' : 's'}: ${matches.join(', ')}`
+        : 'No se encontraron correos válidos.';
+      if (!v.trim()) {
+        applyState(el, fb, false, '', '', true);
+      } else if (matches.length > 0) {
+        applyState(el, fb, true, `Encontrados ${matches.length} correo(s).`, '', false);
+      } else {
+        applyState(el, fb, false, '', 'No se detectó ningún correo válido en el texto.', false);
+      }
+      return;
+    }
+    if (v.length === 0) {
+      applyState(el, fb, false, '', '', true);
+      return;
+    }
+    const ok = REGEX[step].test(v);
+    const msgs = {
+      1: ['Coincide con el patrón ^Hola \\d+$.', 'El texto no empieza con "Hola " seguido de uno o más dígitos.'],
+      2: ['Nombre válido: solo letras y espacios.', 'Solo se permiten letras (con tildes/ñ) y espacios.'],
+      3: ['Teléfono válido.', 'Debe iniciar con 3 y tener exactamente 10 dígitos.'],
+      4: ['Correo con formato válido.', 'Formato de correo incorrecto: usuario@dominio.tld'],
+      5: ['Cadena binaria válida (sin "11" consecutivos).', 'Solo 0/1 y no debe contener "11" seguidos.'],
+    };
+    applyState(el, fb, ok, msgs[step][0], msgs[step][1], false);
+  }
+
+  function runValidation(step) {
+    validate(step);
+  }
+
+  // Attach listeners to all inputs
+  for (let i = 1; i <= 6; i++) {
+    const el = document.getElementById('in-' + i);
+    if (el) el.addEventListener('input', () => validate(i));
+  }
+
+  // Init
+  goTo(1);
+  // Trigger initial validation on step 6 textarea (has default text)
+  validate(6);
+</script>
+</body>
+</html>
